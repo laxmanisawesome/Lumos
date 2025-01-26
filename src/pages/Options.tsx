@@ -44,17 +44,24 @@ export const DEFAULT_TOOL_CONFIG: ToolConfig = {
   },
 };
 export const MULTIMODAL_MODELS = [
-  "llava",
   "bakllava",
-  "moondream",
+  "llama3.2-vision",
+  "llava",
   "llava-llama3",
   "llava-phi3",
+  "minicpm-v",
+  "moondream",
 ];
 export const EMBEDDING_MODELS = [
-  "nomic-embed-text",
   "all-minilm",
+  "bge-large",
+  "bge-m3",
+  "granite-embedding",
   "mxbai-embed-large",
+  "nomic-embed-text",
+  "paraphrase-multilingual",
   "snowflake-arctic-embed",
+  "snowflake-arctic-embed2",
 ];
 export const SUPPORTED_IMG_FORMATS = ["jpeg", "jpg", "png"];
 export const CHAT_CONTAINER_HEIGHT_MIN = 200;
