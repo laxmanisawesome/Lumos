@@ -4,7 +4,7 @@
     "name": "Purgify",
     "description": "AI-powered writing enhancement with grammar fixing and rephrasing using local LLMs via Ollama",
     "action": {
-        "default_popup": "js/index.html",
+        "default_popup": "index.html",
         "default_title": "Purgify",
         "default_icon": "assets/wand_128.png"
     },
@@ -33,7 +33,7 @@
         "http://localhost:11434/*"
     ],
     "options_ui": {
-        "page": "js/options.html",
+        "page": "options.html",
         "open_in_tab": true
     }
 }

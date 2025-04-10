@@ -7,78 +7,48 @@ module.exports = {
     index: "./src/index.tsx",
     options: "./src/options.tsx",
     background: "./src/scripts/background.ts",
-    content: "./src/scripts/content.ts"  // Added content script entry point
+    content: "./src/scripts/content.ts"
   },
-  mode: "production",
+  mode: "development", // Changed to development for easier debugging
+  devtool: 'source-map',
   module: {
     rules: [
       {
         test: /\.tsx?$/,
-        use: [
-          {
-            loader: "ts-loader",
-            options: {
-              compilerOptions: { noEmit: false },
-            }
-          }],
+        use: 'ts-loader',
         exclude: /node_modules/,
       },
       {
-        include: path.resolve(__dirname, "node_modules/@chatscope/chat-ui-kit-styles/dist/default/styles.min.css"),
         test: /\.css$/i,
-        use: [
-          "style-loader",
-          "css-loader",
-        ],
-      },
-      {
-        exclude: /node_modules/,
-        test: /\.css$/i,
-        use: [
-          "style-loader",
-          "css-loader"
-        ]
+        use: ['style-loader', 'css-loader'],
       },
     ],
   },
-  plugins: [
-    new CopyPlugin({
-      patterns: [
-        { from: "manifest.json", to: "../manifest.json" },
-        { from: "./src/assets", to: "../assets" },
-        { from: "./src/content.css", to: "../content.css" }, // Copy content.css to dist folder
-      ],
-    }),
-    ...getHtmlPlugins(["index", "options"]),
-  ],
   resolve: {
-    extensions: [".tsx", ".ts", ".js"],
-    fallback: {
-      // enable use of LangChain document loaders
-      fs: false, // TextLoader
-      zlib: false, // WebPDFLoader
-      http: false, // WebPDFLoader
-      https: false, // WebPDFLoader
-      url: false, // WebPDFLoader
-    }
+    extensions: ['.tsx', '.ts', '.js'],
   },
   output: {
-    path: path.join(__dirname, "dist/js"),
-    filename: "[name].js",
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'js/[name].js',
+    clean: true, // Clean the output directory before emit
   },
-  externals: {
-    // enable use of LangChain document loaders
-    "node:fs/promises": "commonjs2 node:fs/promises", // TextLoader
-  },
+  plugins: [
+    new HTMLPlugin({
+      template: './src/popup.html',
+      filename: 'index.html',
+      chunks: ['index'],
+    }),
+    new HTMLPlugin({
+      template: './src/options.html',
+      filename: 'options.html',
+      chunks: ['options'],
+    }),
+    new CopyPlugin({
+      patterns: [
+        { from: "manifest.json" },
+        { from: "src/assets", to: "assets" },
+        { from: "src/content.css" },
+      ],
+    }),
+  ],
 };
-
-function getHtmlPlugins(chunks) {
-  return chunks.map(
-    (chunk) =>
-      new HTMLPlugin({
-        title: "Purgify", // Changed from Lumos to Purgify
-        filename: `${chunk}.html`,
-        chunks: [chunk],
-      })
-  );
-}

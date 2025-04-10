@@ -151,12 +151,12 @@ function showToolbar(selectedText: string, event: MouseEvent) {
 
   // Render the toolbar
   root.render(
-    <FloatingToolbar
-      selectedText={selectedText}
-      position={position}
-      onClose={hideToolbar}
-      onApplyChange={(newText) => replaceSelectedText(newText, activeElement)}
-    />
+    React.createElement(FloatingToolbar, {
+      selectedText: selectedText,
+      position: position,
+      onClose: hideToolbar,
+      onApplyChange: (newText: string) => replaceSelectedText(newText, activeElement)
+    })
   );
   
   isToolbarActive = true;
