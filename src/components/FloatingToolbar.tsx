@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './FloatingToolbar.css';
-import { OllamaService } from '../../services/ollama';
+import { OllamaService } from '../services/ollama';
 
 interface FloatingToolbarProps {
   selectedText: string;
