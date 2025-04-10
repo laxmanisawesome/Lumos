@@ -1,447 +1,166 @@
-import { ChangeEvent, useEffect, useState } from "react";
-
-import {
-  Box,
-  FormControl,
-  FormControlLabel,
-  FormGroup,
-  InputLabel,
-  MenuItem,
-  Select,
-  SelectChangeEvent,
-  Switch,
-  TextField,
-  ThemeProvider,
-} from "@mui/material";
-
-import {
-  ContentConfig,
-  defaultContentConfig,
-  isContentConfig,
-} from "../contentConfig";
-import { useThemeContext } from "../contexts/ThemeContext";
-import "./Options.css";
-
-export interface ToolConfig {
-  [key: string]: {
-    enabled: boolean;
-    prefix: string;
-  };
-}
-
-export const DEFAULT_HOST = "http://localhost:11434";
-export const DEFAULT_KEEP_ALIVE = "60m";
-export const DEFAULT_CONTENT_CONFIG = JSON.stringify(
-  defaultContentConfig,
-  null,
-  2,
-);
-export const DEFAULT_VECTOR_STORE_TTL_MINS = 60;
-export const DEFAULT_TOOL_CONFIG: ToolConfig = {
-  Calculator: {
-    enabled: true,
-    prefix: "calculate:",
-  },
-};
-export const MULTIMODAL_MODELS = [
-  "llava",
-  "bakllava",
-  "moondream",
-  "llava-llama3",
-  "llava-phi3",
-];
-export const EMBEDDING_MODELS = [
-  "nomic-embed-text",
-  "all-minilm",
-  "mxbai-embed-large",
-  "snowflake-arctic-embed",
-];
-export const SUPPORTED_IMG_FORMATS = ["jpeg", "jpg", "png"];
-export const CHAT_CONTAINER_HEIGHT_MIN = 200;
-export const CHAT_CONTAINER_HEIGHT_MAX = 500;
-
-export interface LumosOptions {
-  ollamaModel: string;
-  ollamaEmbeddingModel: string;
-  ollamaHost: string;
-  contentConfig: ContentConfig;
-  vectorStoreTTLMins: number;
-  toolConfig: ToolConfig;
-}
-
-export const getLumosOptions = async (): Promise<LumosOptions> => {
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.get(
-      [
-        "selectedModel",
-        "selectedEmbeddingModel",
-        "selectedHost",
-        "selectedConfig",
-        "selectedVectorStoreTTLMins",
-        "toolConfig",
-      ],
-      (data) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve({
-            ollamaModel: data.selectedModel,
-            ollamaEmbeddingModel:
-              data.selectedEmbeddingModel || data.selectedModel,
-            ollamaHost: data.selectedHost || DEFAULT_HOST,
-            contentConfig: JSON.parse(
-              data.selectedConfig || DEFAULT_CONTENT_CONFIG,
-            ) as ContentConfig,
-            vectorStoreTTLMins:
-              parseInt(data.selectedVectorStoreTTLMins, 10) ||
-              DEFAULT_VECTOR_STORE_TTL_MINS,
-            toolConfig: data.toolConfig || DEFAULT_TOOL_CONFIG,
-          });
-        }
-      },
-    );
-  });
-};
-
-export const isMultimodal = (model: string): boolean => {
-  return MULTIMODAL_MODELS.some((multimodalModel) =>
-    model.includes(multimodalModel),
-  );
-};
-
-/**
- * Ollama API connectivity check.
- *
- * @param {string} host Ollama host.
- * @return {[boolean, string[], string]} Tuple of connected status, available models, and an optional error message.
- */
-export const apiConnected = async (
-  host: string,
-): Promise<[boolean, string[], string]> => {
-  let resp;
-  const errMsg = "Unable to connect to Ollama API. Check Ollama server.";
-
-  try {
-    resp = await fetch(`${host}/api/tags`);
-  } catch (e) {
-    return [false, [], errMsg];
-  }
-
-  if (resp.ok) {
-    const data = await resp.json();
-    const modelOptions = data.models.map(
-      (model: { name: string }) => model.name,
-    );
-    // successfully connected
-    return [true, modelOptions, ""];
-  }
-
-  return [false, [], errMsg];
-};
-
-export const preloadModel = async (
-  host: string,
-  model: string,
-  isEmbedding = false,
-): Promise<void> => {
-  fetch(`${host}/api/${isEmbedding ? "embeddings" : "chat"}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ model: model }),
-  });
-};
+import React, { useState, useEffect } from 'react';
+import { getConfig, saveConfig, PurgifyConfig } from '../config';
+import './Options.css';
 
 const Options: React.FC = () => {
-  const [model, setModel] = useState("");
-  const [embeddingModel, setEmbeddingModel] = useState("");
-  const [modelOptions, setModelOptions] = useState<string[]>([]);
-  const [host, setHost] = useState(DEFAULT_HOST);
-  const [hostError, setHostError] = useState(false);
-  const [hostHelpText, setHostHelpText] = useState("");
-  const [contentConfig, setContentConfig] = useState(DEFAULT_CONTENT_CONFIG);
-  const [contentConfigError, setContentConfigError] = useState(false);
-  const [contentConfigHelpText, setContentConfigHelpText] = useState("");
-  const [vectorStoreTTLMins, setVectorStoreTTLMins] = useState(
-    DEFAULT_VECTOR_STORE_TTL_MINS,
-  );
-  const [vectorStoreTTLMinsError, setVectorStoreTTLMinsError] = useState(false);
-  const [toolConfig, setToolConfig] = useState(DEFAULT_TOOL_CONFIG);
-  const { theme, toggleDarkMode } = useThemeContext();
-  const isDarkMode = theme.palette.mode === "dark";
-
-  const handleModelChange = (event: SelectChangeEvent) => {
-    const selectedModel = event.target.value;
-    setModel(selectedModel);
-    chrome.storage.local.set({ selectedModel: selectedModel });
-  };
-
-  const handleEmbeddingModelChange = (event: SelectChangeEvent) => {
-    const selectedEmbeddingModel = event.target.value;
-    setEmbeddingModel(selectedEmbeddingModel);
-    chrome.storage.local.set({
-      selectedEmbeddingModel: selectedEmbeddingModel,
-    });
-  };
-
-  const handleHostChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const selectedHost = event.target.value;
-    setHost(selectedHost);
-    chrome.storage.local.set({ selectedHost: selectedHost });
-  };
-
-  const handleContentConfigChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const selectedConfig = event.target.value;
-    setContentConfig(selectedConfig);
-    chrome.storage.local.set({ selectedConfig: selectedConfig });
-
-    if (isContentConfig(selectedConfig)) {
-      setContentConfigError(false);
-      setContentConfigHelpText("");
-    } else {
-      setContentConfigError(true);
-      setContentConfigHelpText(
-        "Invalid JSON or content config. Please check the syntax and update the config.",
-      );
-    }
-  };
-
-  const handleVectorStoreTTLMinsChange = (
-    event: ChangeEvent<HTMLInputElement>,
-  ) => {
-    let selectedVectorStoreTTLMins = parseInt(event.target.value, 10);
-
-    if (isNaN(selectedVectorStoreTTLMins)) {
-      selectedVectorStoreTTLMins = 0;
-    }
-
-    if (selectedVectorStoreTTLMins < 1) {
-      setVectorStoreTTLMinsError(true);
-    } else {
-      setVectorStoreTTLMinsError(false);
-    }
-
-    setVectorStoreTTLMins(selectedVectorStoreTTLMins);
-    chrome.storage.local.set({
-      selectedVectorStoreTTLMins: selectedVectorStoreTTLMins,
-    });
-  };
-
-  const handleToolEnabledChange = (tool: string, enabled: boolean) => {
-    const newToolConfig = { ...toolConfig };
-    newToolConfig[tool].enabled = enabled;
-    setToolConfig(newToolConfig);
-    chrome.storage.local.set({ toolConfig: newToolConfig });
-  };
-
-  const handleToolPrefixChange = (tool: string, prefix: string) => {
-    const newToolConfig = { ...toolConfig };
-    newToolConfig[tool].prefix = prefix;
-    setToolConfig(newToolConfig);
-    chrome.storage.local.set({ toolConfig: newToolConfig });
-  };
+  const [config, setConfig] = useState<PurgifyConfig | null>(null);
+  const [status, setStatus] = useState<string>('');
+  const [ollamaStatus, setOllamaStatus] = useState<{ connected: boolean; models: string[] }>({
+    connected: false,
+    models: []
+  });
 
   useEffect(() => {
-    chrome.storage.local
-      .get([
-        "selectedModel",
-        "selectedEmbeddingModel",
-        "selectedHost",
-        "selectedConfig",
-        "selectedVectorStoreTTLMins",
-        "toolConfig",
-      ])
-      .then(async (data) => {
-        if (data.selectedConfig) {
-          setContentConfig(data.selectedConfig);
-        }
-        if (data.selectedVectorStoreTTLMins) {
-          setVectorStoreTTLMins(parseInt(data.selectedVectorStoreTTLMins, 10));
-        }
-        if (data.toolConfig) {
-          // This logic is needed so tools can be added and removed from
-          // DEFAULT_TOOL_CONFIG and the toolConfig local storage.
-          Object.keys(DEFAULT_TOOL_CONFIG).forEach((tool) => {
-            if (!data.toolConfig[tool]) {
-              // add new tool
-              data.toolConfig[tool] = DEFAULT_TOOL_CONFIG[tool];
-            }
-          });
-          Object.keys(data.toolConfig).forEach((tool) => {
-            if (!DEFAULT_TOOL_CONFIG[tool]) {
-              // remove deleted tool
-              delete data.toolConfig[tool];
-            }
-          });
-          setToolConfig(data.toolConfig);
-          chrome.storage.local.set({ toolConfig: data.toolConfig });
-        }
-
-        // API connectivity check
-        const selectedHost = data.selectedHost || DEFAULT_HOST;
-        setHost(selectedHost);
-
-        const [connected, models, errMsg] = await apiConnected(selectedHost);
-        if (connected) {
-          setHostError(false);
-          setHostHelpText("");
-          setModelOptions(models);
-
-          if (data.selectedModel) {
-            setModel(data.selectedModel);
-          } else {
-            setModel(models[0]);
-            chrome.storage.local.set({ selectedModel: models[0] });
-          }
-          if (data.selectedEmbeddingModel) {
-            setEmbeddingModel(data.selectedEmbeddingModel);
-          }
-
-          // preload inference model
-          const inferenceModel = data.selectedModel || models[0];
-          preloadModel(selectedHost, inferenceModel);
-
-          // preload embedding model
-          const embeddingModel = data.selectedEmbeddingModel || inferenceModel;
-          if (embeddingModel !== inferenceModel) {
-            preloadModel(selectedHost, embeddingModel, true);
-          }
-        } else {
-          setHostError(true);
-          setHostHelpText(errMsg);
-        }
-      });
+    // Load config on mount
+    getConfig().then(loadedConfig => {
+      setConfig(loadedConfig);
+      checkOllamaStatus(loadedConfig.ollamaBaseUrl);
+    });
   }, []);
 
+  const checkOllamaStatus = (host: string) => {
+    chrome.runtime.sendMessage(
+      { action: 'checkOllamaStatus', host },
+      (response) => {
+        if (response && response.success) {
+          setOllamaStatus({
+            connected: true,
+            models: response.models || []
+          });
+        } else {
+          setOllamaStatus({
+            connected: false,
+            models: []
+          });
+        }
+      }
+    );
+  };
+
+  const handleSave = async () => {
+    if (!config) return;
+    
+    try {
+      await saveConfig(config);
+      setStatus('Settings saved successfully!');
+      setTimeout(() => setStatus(''), 3000);
+    } catch (err) {
+      setStatus('Error saving settings');
+      console.error('Error saving settings:', err);
+    }
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    if (!config) return;
+
+    const { name, value } = e.target;
+    
+    if (name === 'ollamaBaseUrl' || name === 'ollamaModel') {
+      setConfig({
+        ...config,
+        [name]: value
+      });
+    } else if (name === 'grammarFixPrompt' || name === 'rephrasePrompt') {
+      setConfig({
+        ...config,
+        promptTemplates: {
+          ...config.promptTemplates,
+          [name === 'grammarFixPrompt' ? 'grammarFix' : 'rephrase']: value
+        }
+      });
+    }
+  };
+
+  const handleOllamaCheck = () => {
+    if (!config) return;
+    checkOllamaStatus(config.ollamaBaseUrl);
+  };
+
+  if (!config) {
+    return <div className="purgify-options">Loading...</div>;
+  }
+
   return (
-    <ThemeProvider theme={theme}>
-      <Box className="lumos-options-popup">
-        <FormControl className="lumos-options-input" size="small">
-          <InputLabel id="ollama-model-select-label">Ollama Model</InputLabel>
-          <Select
-            sx={{ "margin-bottom": "15px" }}
-            labelId="ollama-model-select-label"
-            label="Ollama Model"
-            value={model}
-            onChange={handleModelChange}
+    <div className="purgify-options">
+      <h1>Purgify Extension Settings</h1>
+
+      <div className="option-section">
+        <h2>Ollama Connection</h2>
+        <div className="option-row">
+          <label htmlFor="ollamaBaseUrl">Ollama URL:</label>
+          <input
+            type="text"
+            id="ollamaBaseUrl"
+            name="ollamaBaseUrl"
+            value={config.ollamaBaseUrl}
+            onChange={handleChange}
+          />
+          <button 
+            className="test-button"
+            onClick={handleOllamaCheck}
           >
-            {modelOptions
-              .filter(
-                (model: string) =>
-                  !EMBEDDING_MODELS.includes(model.split(":")[0]),
-              )
-              .map((modelName) => {
-                const [model, tag] = modelName.split(":");
-                const isMulti = isMultimodal(model);
-                return (
-                  <MenuItem key={modelName} value={modelName}>
-                    {isMulti
-                      ? `${model} (${tag}, multimodal)`
-                      : `${model} (${tag})`}
-                  </MenuItem>
-                );
-              })}
-          </Select>
-        </FormControl>
-        <FormControl className="lumos-options-input" size="small">
-          <InputLabel id="ollama-embedding-select-label">
-            Ollama Embedding Model
-          </InputLabel>
-          <Select
-            sx={{ "margin-bottom": "15px" }}
-            labelId="ollama-embedding-select-label"
-            label="Ollama Embedding Model"
-            value={embeddingModel}
-            onChange={handleEmbeddingModelChange}
+            Test Connection
+          </button>
+        </div>
+        
+        <div className="status-indicator">
+          Connection Status: 
+          <span className={ollamaStatus.connected ? 'status-ok' : 'status-error'}>
+            {ollamaStatus.connected ? 'Connected' : 'Not Connected'}
+          </span>
+        </div>
+
+        <div className="option-row">
+          <label htmlFor="ollamaModel">Ollama Model:</label>
+          <select
+            id="ollamaModel"
+            name="ollamaModel"
+            value={config.ollamaModel}
+            onChange={handleChange}
           >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
-            {modelOptions
-              .filter((model: string) =>
-                EMBEDDING_MODELS.includes(model.split(":")[0]),
-              )
-              .map((modelName: string, index) => (
-                <MenuItem key={index} value={modelName}>
-                  {`${modelName.split(":")[0]} (${modelName.split(":")[1]})`}
-                </MenuItem>
-              ))}
-          </Select>
-        </FormControl>
-        <TextField
-          className="lumos-options-input"
-          sx={{ "margin-bottom": "15px" }}
-          label="Ollama Host"
-          value={host}
-          error={hostError}
-          helperText={hostHelpText}
-          onChange={handleHostChange}
-        />
-        <TextField
-          className="lumos-options-input"
-          sx={{ "margin-bottom": "15px" }}
-          type="number"
-          label="Vector Store TTL (minutes)"
-          value={vectorStoreTTLMins}
-          error={vectorStoreTTLMinsError}
-          onChange={handleVectorStoreTTLMinsChange}
-        />
-        <TextField
-          className="lumos-options-input"
-          sx={{ "margin-bottom": "15px" }}
-          label="Content Parser Config"
-          multiline
-          rows={10}
-          value={contentConfig}
-          error={contentConfigError}
-          helperText={contentConfigHelpText}
-          onChange={handleContentConfigChange}
-        />
-        <Box sx={{ mb: "5px" }}>Enable/Disable Tools</Box>
-        <Box sx={{ ml: "10px" }}>
-          {Object.entries(toolConfig).map(([key, value]) => (
-            <Box key={key} sx={{ display: "flex", alignItems: "center" }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={value.enabled}
-                    onChange={() =>
-                      handleToolEnabledChange(key, !value.enabled)
-                    }
-                  />
-                }
-                label={key}
-              />
-              <div style={{ flex: 1 }}></div>
-              <TextField
-                sx={{ width: "50%" }}
-                label="Prefix trigger"
-                disabled={!value.enabled}
-                value={value.prefix}
-                onChange={(event) =>
-                  handleToolPrefixChange(key, event.target.value)
-                }
-              />
-            </Box>
-          ))}
-        </Box>
-        <Box sx={{ ml: "10px" }}>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={theme.palette.mode === "dark"}
-                  onChange={toggleDarkMode}
-                  name="darkModeToggle"
-                />
-              }
-              label={`Dark Arts${isDarkMode ? " 😈" : ""}`}
-            />
-          </FormGroup>
-        </Box>
-      </Box>
-    </ThemeProvider>
+            {ollamaStatus.models.length > 0 ? (
+              ollamaStatus.models.map(model => (
+                <option key={model} value={model}>{model}</option>
+              ))
+            ) : (
+              <option value={config.ollamaModel}>{config.ollamaModel}</option>
+            )}
+          </select>
+        </div>
+      </div>
+
+      <div className="option-section">
+        <h2>Prompt Templates</h2>
+        <div className="option-row">
+          <label htmlFor="grammarFixPrompt">Grammar Fix Prompt:</label>
+          <textarea
+            id="grammarFixPrompt"
+            name="grammarFixPrompt"
+            value={config.promptTemplates.grammarFix}
+            onChange={handleChange}
+            rows={3}
+          />
+        </div>
+
+        <div className="option-row">
+          <label htmlFor="rephrasePrompt">Rephrase Prompt:</label>
+          <textarea
+            id="rephrasePrompt"
+            name="rephrasePrompt"
+            value={config.promptTemplates.rephrase}
+            onChange={handleChange}
+            rows={3}
+          />
+        </div>
+      </div>
+
+      <div className="save-section">
+        <button onClick={handleSave} className="save-button">Save Settings</button>
+        {status && <div className="status-message">{status}</div>}
+      </div>
+    </div>
   );
 };
 

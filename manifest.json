@@ -1,11 +1,11 @@
 {
-    "version": "1.0.17",
+    "version": "1.0.0",
     "manifest_version": 3,
-    "name": "Lumos",
-    "description": "An LLM co-pilot for browsing the web, powered by local LLMs. Your prompts never leave the browser.",
+    "name": "Purgify",
+    "description": "AI-powered writing enhancement with grammar fixing and rephrasing using local LLMs via Ollama",
     "action": {
         "default_popup": "js/index.html",
-        "default_title": "Lumos",
+        "default_title": "Purgify",
         "default_icon": "assets/wand_128.png"
     },
     "icons": {
@@ -22,6 +22,9 @@
         "scripting",
         "storage",
         "clipboardRead"
+    ],
+    "host_permissions": [
+        "http://localhost:11434/*"
     ],
     "options_ui": {
         "page": "js/options.html",

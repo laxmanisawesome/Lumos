@@ -1,20 +1,9 @@
-import React from "react";
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import Options from './pages/Options';
 
-import CssBaseline from "@mui/material/CssBaseline";
-import ReactDOM from "react-dom/client";
-
-import { ThemeProvider } from "./contexts/ThemeContext";
-import Options from "./pages/Options";
-
-const root = document.createElement("div");
-root.className = "container";
-document.body.appendChild(root);
-const rootDiv = ReactDOM.createRoot(root);
-rootDiv.render(
-  <React.StrictMode>
-    <ThemeProvider>
-      <CssBaseline />
-      <Options />
-    </ThemeProvider>
-  </React.StrictMode>,
-);
+const container = document.getElementById('options-root');
+if (container) {
+  const root = createRoot(container);
+  root.render(<Options />);
+}

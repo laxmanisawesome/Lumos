@@ -1,20 +1,9 @@
-import React from "react";
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import Popup from './pages/Popup';
 
-import CssBaseline from "@mui/material/CssBaseline";
-import ReactDOM from "react-dom/client";
-
-import App from "./App";
-import { ThemeProvider } from "./contexts/ThemeContext";
-
-const root = document.createElement("div");
-root.className = "container";
-document.body.appendChild(root);
-const rootDiv = ReactDOM.createRoot(root);
-rootDiv.render(
-  <React.StrictMode>
-    <ThemeProvider>
-      <CssBaseline />
-      <App />
-    </ThemeProvider>
-  </React.StrictMode>,
-);
+const container = document.getElementById('popup-root');
+if (container) {
+  const root = createRoot(container);
+  root.render(<Popup />);
+}

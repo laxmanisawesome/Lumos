@@ -2,12 +2,12 @@ const path = require("path");
 const HTMLPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
 
-
 module.exports = {
   entry: {
     index: "./src/index.tsx",
     options: "./src/options.tsx",
-    background: "./src/scripts/background.ts"
+    background: "./src/scripts/background.ts",
+    content: "./src/scripts/content.ts"  // Added content script entry point
   },
   mode: "production",
   module: {
@@ -46,6 +46,7 @@ module.exports = {
       patterns: [
         { from: "manifest.json", to: "../manifest.json" },
         { from: "./src/assets", to: "../assets" },
+        { from: "./src/content.css", to: "../content.css" }, // Copy content.css to dist folder
       ],
     }),
     ...getHtmlPlugins(["index", "options"]),
@@ -75,7 +76,7 @@ function getHtmlPlugins(chunks) {
   return chunks.map(
     (chunk) =>
       new HTMLPlugin({
-        title: "Lumos",
+        title: "Purgify", // Changed from Lumos to Purgify
         filename: `${chunk}.html`,
         chunks: [chunk],
       })
