@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import './FloatingToolbar.css';
-import { OllamaService } from '../services/ollama';
 
 interface FloatingToolbarProps {
   selectedText: string;
@@ -17,17 +16,27 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState('');
-  const ollamaService = new OllamaService();
 
+  // Updated to use chrome.runtime messaging instead of direct OllamaService
   const handleFixGrammar = async () => {
     setIsProcessing(true);
     try {
-      const fixedText = await ollamaService.fixGrammar(selectedText);
-      setResult(fixedText);
+      // Send message to background script instead of calling OllamaService directly
+      chrome.runtime.sendMessage(
+        { action: 'fixGrammar', text: selectedText },
+        (response) => {
+          if (response && response.success) {
+            setResult(response.result);
+          } else {
+            console.error('Error fixing grammar:', response?.error || 'Unknown error');
+            setResult('Error processing request');
+          }
+          setIsProcessing(false);
+        }
+      );
     } catch (error) {
-      console.error('Error fixing grammar:', error);
+      console.error('Error sending message to background script:', error);
       setResult('Error processing request');
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -35,12 +44,22 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
   const handleRephrase = async () => {
     setIsProcessing(true);
     try {
-      const rephrased = await ollamaService.rephrase(selectedText);
-      setResult(rephrased);
+      // Send message to background script instead of calling OllamaService directly
+      chrome.runtime.sendMessage(
+        { action: 'rephrase', text: selectedText },
+        (response) => {
+          if (response && response.success) {
+            setResult(response.result);
+          } else {
+            console.error('Error rephrasing text:', response?.error || 'Unknown error');
+            setResult('Error processing request');
+          }
+          setIsProcessing(false);
+        }
+      );
     } catch (error) {
-      console.error('Error rephrasing text:', error);
+      console.error('Error sending message to background script:', error);
       setResult('Error processing request');
-    } finally {
       setIsProcessing(false);
     }
   };

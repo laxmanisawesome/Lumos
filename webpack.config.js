@@ -16,7 +16,12 @@ module.exports = {
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
-        exclude: /node_modules/,
+        exclude: [
+          /node_modules/,
+          path.resolve(__dirname, 'src/components/ChatBar.tsx'),
+          path.resolve(__dirname, 'src/components/ChatHistory.tsx'),
+          path.resolve(__dirname, 'src/components/CodeBlock.tsx')
+        ],
       },
       {
         test: /\.css$/i,
