@@ -55,19 +55,30 @@ const Options: React.FC = () => {
   ) => {
     if (!config) return;
 
-    const { name, value } = e.target;
+    const { name, value, type } = e.target as HTMLInputElement;
     
     if (name === 'ollamaBaseUrl' || name === 'ollamaModel') {
       setConfig({
         ...config,
         [name]: value
       });
-    } else if (name === 'grammarFixPrompt' || name === 'rephrasePrompt') {
+    } else if (name === 'autoCheckEnabled') {
+      setConfig({
+        ...config,
+        autoCheckEnabled: (e.target as HTMLInputElement).checked
+      });
+    } else if (name === 'grammarFixPrompt' || name === 'rephrasePrompt' || name === 'autoGrammarCheckPrompt') {
+      const promptKey = name === 'grammarFixPrompt' 
+        ? 'grammarFix' 
+        : name === 'rephrasePrompt' 
+          ? 'rephrase' 
+          : 'autoGrammarCheck';
+
       setConfig({
         ...config,
         promptTemplates: {
           ...config.promptTemplates,
-          [name === 'grammarFixPrompt' ? 'grammarFix' : 'rephrase']: value
+          [promptKey]: value
         }
       });
     }
@@ -132,6 +143,24 @@ const Options: React.FC = () => {
       </div>
 
       <div className="option-section">
+        <h2>Auto Grammar Check</h2>
+        <div className="option-row checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              name="autoCheckEnabled"
+              checked={config.autoCheckEnabled}
+              onChange={handleChange}
+            />
+            Enable automatic grammar checking
+          </label>
+          <p className="setting-description">
+            When enabled, Purgify will automatically check for grammar issues as you type in text fields.
+          </p>
+        </div>
+      </div>
+
+      <div className="option-section">
         <h2>Prompt Templates</h2>
         <div className="option-row">
           <label htmlFor="grammarFixPrompt">Grammar Fix Prompt:</label>
@@ -142,6 +171,7 @@ const Options: React.FC = () => {
             onChange={handleChange}
             rows={3}
           />
+          <p className="prompt-help">Used when manually fixing grammar using the toolbar</p>
         </div>
 
         <div className="option-row">
@@ -153,6 +183,19 @@ const Options: React.FC = () => {
             onChange={handleChange}
             rows={3}
           />
+          <p className="prompt-help">Used when rephrasing text using the toolbar</p>
+        </div>
+
+        <div className="option-row">
+          <label htmlFor="autoGrammarCheckPrompt">Auto Grammar Check Prompt:</label>
+          <textarea
+            id="autoGrammarCheckPrompt"
+            name="autoGrammarCheckPrompt"
+            value={config.promptTemplates.autoGrammarCheck}
+            onChange={handleChange}
+            rows={3}
+          />
+          <p className="prompt-help">Used when automatically checking grammar as you type</p>
         </div>
       </div>
 

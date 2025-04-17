@@ -73,6 +73,16 @@
   animation: spin 1s ease-in-out infinite;
 }
 
+.purgify-fixed-bottom-right {
+  position: fixed !important;
+  bottom: 32px;
+  right: 32px;
+  left: auto !important;
+  top: auto !important;
+  z-index: 2147483647;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

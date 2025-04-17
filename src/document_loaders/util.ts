@@ -2,7 +2,7 @@ import { Document } from "@langchain/core/documents";
 import { JSONLoader } from "langchain/document_loaders/fs/json";
 import { WebPDFLoader } from "langchain/document_loaders/web/pdf";
 
-import { Attachment } from "../components/ChatBar";
+import { Attachment } from "../types/attachments";
 import { CSVPackedLoader } from "../document_loaders/csv";
 import { DynamicFileLoader } from "../document_loaders/dynamic_file";
 

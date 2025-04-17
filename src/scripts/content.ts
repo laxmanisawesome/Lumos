@@ -86,6 +86,99 @@ const root = createRoot(toolbarContainer);
 // Track if toolbar is currently shown
 let isToolbarActive = false;
 
+// Debounce timeout for automatic grammar checking
+let grammarCheckTimeout: number | null = null;
+
+// Create a suggestion overlay container
+const createSuggestionOverlay = (): HTMLDivElement => {
+  const overlay = document.createElement('div');
+  overlay.id = 'purgify-suggestion-overlay';
+  overlay.style.position = 'absolute';
+  overlay.style.zIndex = '10001';
+  overlay.style.background = 'white';
+  overlay.style.border = '1px solid #ccc';
+  overlay.style.borderRadius = '4px';
+  overlay.style.padding = '8px';
+  overlay.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+  overlay.style.fontSize = '14px';
+  overlay.style.maxWidth = '300px';
+  overlay.style.display = 'none';
+  document.body.appendChild(overlay);
+  return overlay;
+};
+
+// Create the suggestion overlay
+const suggestionOverlay = createSuggestionOverlay();
+
+// Monitor input fields for grammar checking
+const startMonitoring = (element: HTMLElement) => {
+  element.addEventListener('input', () => {
+    if (grammarCheckTimeout) {
+      clearTimeout(grammarCheckTimeout);
+    }
+    
+    grammarCheckTimeout = window.setTimeout(() => {
+      const text = element.isContentEditable 
+        ? element.innerText || element.textContent 
+        : (element as HTMLInputElement).value;
+      
+      if (text && text.trim().length > 10) { // Only check if enough content
+        autoCheckGrammar(text, element);
+      }
+    }, 1000); // 1-second debounce
+  });
+};
+
+// Automatically check grammar
+const autoCheckGrammar = (text: string, element: HTMLElement) => {
+  // Send to background script for processing with TinyLlama/Ollama
+  chrome.runtime.sendMessage(
+    { action: 'autoCheckGrammar', text: text },
+    (response) => {
+      if (response && response.success && response.hasIssues) {
+        showSuggestionOverlay(response.suggestion, element);
+      }
+    }
+  );
+};
+
+// Show suggestion overlay near the element
+const showSuggestionOverlay = (suggestion: string, element: HTMLElement) => {
+  const rect = element.getBoundingClientRect();
+  
+  suggestionOverlay.innerHTML = `
+    <div style="margin-bottom: 8px; color: #4a90e2; font-weight: bold;">Grammar suggestion:</div>
+    <div style="margin-bottom: 12px;">${suggestion}</div>
+    <div style="display: flex; justify-content: space-between;">
+      <button id="purgify-apply-suggestion" style="background-color: #4a90e2; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Apply</button>
+      <button id="purgify-dismiss-suggestion" style="background-color: #f5f5f5; border: 1px solid #ddd; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Dismiss</button>
+    </div>
+  `;
+  
+  suggestionOverlay.style.top = `${rect.bottom + window.scrollY + 5}px`;
+  suggestionOverlay.style.left = `${rect.left + window.scrollX}px`;
+  suggestionOverlay.style.display = 'block';
+  
+  // Handle apply button
+  document.getElementById('purgify-apply-suggestion')?.addEventListener('click', () => {
+    const selectedText = element.isContentEditable
+      ? element.innerText || element.textContent || ''
+      : (element as HTMLInputElement).value;
+    replaceSelectedText(suggestion, element as HTMLInputElement | HTMLTextAreaElement);
+    hideSuggestionOverlay();
+  });
+  
+  // Handle dismiss button
+  document.getElementById('purgify-dismiss-suggestion')?.addEventListener('click', () => {
+    hideSuggestionOverlay();
+  });
+};
+
+// Hide the suggestion overlay
+const hideSuggestionOverlay = () => {
+  suggestionOverlay.style.display = 'none';
+};
+
 // Listen for text selection
 document.addEventListener('mouseup', (e) => {
   const selection = window.getSelection();
@@ -118,18 +211,59 @@ document.addEventListener('mouseup', (e) => {
   }
 });
 
+// Check for input fields when page loads or DOM changes
+document.addEventListener('focusin', (event) => {
+  const target = event.target as HTMLElement;
+  if (target.isContentEditable || 
+      target.tagName === 'TEXTAREA' || 
+      (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text')) {
+    startMonitoring(target);
+  }
+});
+
+// Monitor DOM changes to detect dynamically added input fields
+const observer = new MutationObserver(mutations => {
+  mutations.forEach(mutation => {
+    mutation.addedNodes.forEach(node => {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as HTMLElement;
+        
+        // Check if it's an input field
+        if (element.isContentEditable || 
+            element.tagName === 'TEXTAREA' || 
+            (element.tagName === 'INPUT' && (element as HTMLInputElement).type === 'text')) {
+          startMonitoring(element);
+        }
+        
+        // Check child elements
+        const inputFields = element.querySelectorAll('textarea, input[type="text"], [contenteditable="true"]');
+        inputFields.forEach(field => {
+          startMonitoring(field as HTMLElement);
+        });
+      }
+    });
+  });
+});
+
+// Start observing the document
+observer.observe(document.body, { childList: true, subtree: true });
+
 // Hide toolbar when clicking outside
 document.addEventListener('mousedown', (e) => {
   const target = e.target as HTMLElement;
   
-  // Don't hide if clicking on the toolbar itself
-  if (target.closest('#purgify-toolbar-container')) {
+  // Don't hide if clicking on the toolbar or suggestion overlay
+  if (target.closest('#purgify-toolbar-container') || target.closest('#purgify-suggestion-overlay')) {
     return;
   }
   
+  // Hide toolbar if active
   if (isToolbarActive) {
     hideToolbar();
   }
+  
+  // Hide suggestion overlay
+  hideSuggestionOverlay();
 });
 
 function showToolbar(selectedText: string, event: MouseEvent) {

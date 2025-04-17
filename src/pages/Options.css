@@ -46,6 +46,22 @@ h2 {
   flex-direction: column;
 }
 
+.checkbox-row {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.checkbox-row input {
+  margin-right: 8px;
+  width: auto;
+}
+
+.checkbox-row label {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+
 label {
   display: block;
   margin-bottom: 5px;
@@ -127,6 +143,20 @@ button:hover {
   border-radius: 4px;
   font-size: 14px;
   animation: fadeIn 0.3s;
+}
+
+.setting-description {
+  font-size: 13px;
+  color: #666;
+  margin: 5px 0 0;
+  font-style: italic;
+}
+
+.prompt-help {
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+  font-style: italic;
 }
 
 @keyframes fadeIn {

@@ -19,13 +19,18 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
 
   // Updated to use chrome.runtime messaging instead of direct OllamaService
   const handleFixGrammar = async () => {
+    console.log('Grammar fix button clicked');
+    console.log('Selected text to fix:', selectedText);
     setIsProcessing(true);
     try {
+      console.log('Sending message to background script with action: fixGrammar');
       // Send message to background script instead of calling OllamaService directly
       chrome.runtime.sendMessage(
         { action: 'fixGrammar', text: selectedText },
         (response) => {
+          console.log('Received response from background script:', response);
           if (response && response.success) {
+            console.log('Grammar fix successful, setting result:', response.result);
             setResult(response.result);
           } else {
             console.error('Error fixing grammar:', response?.error || 'Unknown error');
@@ -42,13 +47,18 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
   };
 
   const handleRephrase = async () => {
+    console.log('Rephrase button clicked');
+    console.log('Selected text to rephrase:', selectedText);
     setIsProcessing(true);
     try {
+      console.log('Sending message to background script with action: rephrase');
       // Send message to background script instead of calling OllamaService directly
       chrome.runtime.sendMessage(
         { action: 'rephrase', text: selectedText },
         (response) => {
+          console.log('Received response from background script:', response);
           if (response && response.success) {
+            console.log('Rephrase successful, setting result:', response.result);
             setResult(response.result);
           } else {
             console.error('Error rephrasing text:', response?.error || 'Unknown error');
@@ -65,22 +75,28 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
   };
 
   const handleApply = () => {
+    console.log('Apply button clicked, applying result:', result);
     onApplyChange(result);
     onClose();
   };
 
   const handleCancel = () => {
+    console.log('Cancel button clicked');
     setResult('');
     onClose();
   };
 
+  // Log on render to verify component is working
+  console.log('FloatingToolbar rendered', { 
+    selectedText, 
+    position, 
+    hasResult: !!result, 
+    isProcessing 
+  });
+
   return (
     <div 
-      className="purgify-floating-toolbar" 
-      style={{ 
-        top: `${position.y}px`, 
-        left: `${position.x}px` 
-      }}
+      className="purgify-floating-toolbar purgify-fixed-bottom-right"
     >
       {!result ? (
         <div className="purgify-toolbar-actions">
