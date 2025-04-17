@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getConfig } from '../config';
 import './Popup.css';
+import ReactDOM from 'react-dom/client';
+import Options from './Options';
 
 const Popup: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
@@ -32,6 +34,58 @@ const Popup: React.FC = () => {
         }
       );
     });
+
+    // Inline settings panel logic
+    const handler = () => {
+      const rootDiv = document.getElementById('purgify-inline-settings-root');
+      if (rootDiv) {
+        // Clear previous content
+        rootDiv.innerHTML = '';
+        const root = ReactDOM.createRoot(rootDiv);
+        root.render(
+          <div style={{
+            background: '#fff',
+            borderRadius: 12,
+            boxShadow: '0 4px 24px #0003',
+            padding: 28,
+            marginTop: 18,
+            position: 'fixed',
+            top: 40,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            minWidth: 340,
+            maxWidth: 480,
+            width: '90%',
+            border: '1px solid #e5e5e5',
+            animation: 'fadeIn 0.2s',
+          }}>
+            <button
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                background: '#eee',
+                border: 'none',
+                borderRadius: 6,
+                padding: '4px 12px',
+                cursor: 'pointer',
+                fontSize: 18,
+                fontWeight: 700,
+                color: '#888',
+                boxShadow: '0 1px 4px #0001',
+                transition: 'background 0.2s',
+              }}
+              onClick={() => { root.unmount(); }}
+              aria-label="Close settings"
+            >✕</button>
+            <Options />
+          </div>
+        );
+      }
+    };
+    document.addEventListener('purgify:open-settings', handler);
+    return () => document.removeEventListener('purgify:open-settings', handler);
   }, []);
 
   const openOptions = () => {
@@ -148,6 +202,23 @@ const Popup: React.FC = () => {
               <div>
                 <p className="status-error">❌ Not connected to Ollama</p>
                 {error && <p className="error-message">{error}</p>}
+                <button 
+                  onClick={() => {
+                    chrome.tabs.create({ url: 'chrome-extension://' + chrome.runtime.id + '/setup.html' });
+                  }}
+                  style={{
+                    marginTop: '10px',
+                    backgroundColor: '#4a90e2',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Run Setup Assistant
+                </button>
               </div>
             )}
           </div>
@@ -188,10 +259,22 @@ const Popup: React.FC = () => {
       </div>
 
       <div className="popup-footer">
-        <button onClick={openOptions} className="settings-button">
+        <button
+          onClick={() => {
+            document.dispatchEvent(new CustomEvent('purgify:open-settings'));
+          }}
+          className="settings-button"
+        >
           Open Settings
         </button>
       </div>
+      {typeof chrome === 'undefined' && (
+        <div style={{color: '#f56c6c', fontSize: 13, marginTop: 8}}>
+          Extension APIs not available. Please use in Chrome/Edge/Brave.
+        </div>
+      )}
+      {/* Inline settings panel for in-popup editing */}
+      <div id="purgify-inline-settings-root"></div>
     </div>
   );
 };

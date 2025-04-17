@@ -13,41 +13,59 @@ Purgify is a writing enhancement tool that uses local language models to help yo
 - 🏠 **Local Processing** - Uses Ollama for local LLM processing, ensuring your text never leaves your computer
 - 🚀 **Floating Interface** - Provides a non-intrusive floating UI similar to Grammarly
 
-## Ollama Server Setup
+## Quick Setup for New Users
 
-A local Ollama server is needed for LLM inference. Download and install Ollama [here](https://ollama.ai/).
+### Automatic Setup (Recommended)
 
-### Pull Model
+1. **Install the Extension**
+   - Load the extension in Chrome from the `dist` folder (see installation instructions below)
+   
+2. **Run the Setup Assistant**
+   - Click the Purgify extension icon in your browser toolbar
+   - If Ollama is not connected, you'll see a "Run Setup Assistant" button
+   - Click this button to open the setup guide which will help you:
+     - Install Ollama if it's not already installed
+     - Set up the OLLAMA_ORIGINS environment variable
+     - Pull the TinyLlama model
+     - Configure Ollama to run with Chrome extension support
+     - Set up automatic startup (optional)
+   
+   The setup assistant provides platform-specific instructions for macOS, Linux, and Windows.
 
-```
-ollama pull tinyllama
-```
-or
-```
-ollama pull deepseek-coder
-```
+### Manual Setup
 
-### Start Server
+#### Prerequisites
 
-```
-OLLAMA_ORIGINS=chrome-extension://* ollama serve
-```
+- [Ollama](https://ollama.ai/) installed on your system
+- TinyLlama model or another compatible model
 
-Note: The environment variable `OLLAMA_ORIGINS` must be set to `chrome-extension://*` to allow requests originating from the Chrome extension.
+#### Steps
 
-### macOS
+1. **Set the OLLAMA_ORIGINS environment variable and start Ollama (macOS/Linux):**
 
-Run `launchctl setenv` to set `OLLAMA_ORIGINS`.
-```
-launchctl setenv OLLAMA_ORIGINS "chrome-extension://*"
-```
+   ```sh
+   export OLLAMA_ORIGINS="chrome-extension://*"
+   ollama serve
+   ```
 
-### Docker
+   This sets the variable for the current terminal session. If you close the terminal, you will need to run these commands again before starting Ollama.
 
-The Ollama server can also be run in a Docker container:
-```
-docker run -e OLLAMA_ORIGINS="chrome-extension://*" -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
-```
+2. **For Windows:**
+
+   ```bat
+   set OLLAMA_ORIGINS=chrome-extension://*
+   ollama serve
+   ```
+
+2. **Pull the TinyLlama model**:
+   ```
+   ollama pull tinyllama
+   ```
+
+3. **Start Ollama**:
+   ```
+   ollama serve
+   ```
 
 ## Chrome Extension Setup
 
@@ -71,6 +89,16 @@ Follow these steps to install the extension:
 1. Open Chrome and navigate to `chrome://extensions/`
 2. Enable "Developer mode" in the top-right corner
 3. Click "Load unpacked" and select the `dist` folder from this project
+
+## Troubleshooting
+
+If you encounter a "403 Forbidden" error, it means that the OLLAMA_ORIGINS environment variable is not set correctly. Make sure:
+
+1. Ollama is running
+2. OLLAMA_ORIGINS is set to "chrome-extension://*"
+3. You've restarted Ollama after setting the environment variable
+
+The automated setup assistant can fix these issues for you.
 
 ## Purgify Options
 

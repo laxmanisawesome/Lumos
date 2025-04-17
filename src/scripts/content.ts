@@ -1,6 +1,5 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import FloatingToolbar from '../components/FloatingToolbar';
 
 const getHighlightedContent = (): string => {
   const selection = window.getSelection();
@@ -207,7 +206,7 @@ document.addEventListener('mouseup', (e) => {
   
   // If there's selected text, show the toolbar
   if (selectedText) {
-    showToolbar(selectedText, e);
+    showToolbar(selectedText);
   }
 });
 
@@ -266,7 +265,7 @@ document.addEventListener('mousedown', (e) => {
   hideSuggestionOverlay();
 });
 
-function showToolbar(selectedText: string, event: MouseEvent) {
+function showToolbar(selectedText: string) {
   // Calculate position
   const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect();
   
@@ -283,17 +282,16 @@ function showToolbar(selectedText: string, event: MouseEvent) {
   // Getting the active element to replace text later
   const activeElement = document.activeElement as HTMLInputElement | HTMLTextAreaElement;
 
-  // Render the toolbar
-  root.render(
-    React.createElement(FloatingToolbar, {
-      selectedText: selectedText,
-      position: position,
-      onClose: hideToolbar,
-      onApplyChange: (newText: string) => replaceSelectedText(newText, activeElement)
-    })
-  );
-  
-  isToolbarActive = true;
+  // Toolbar feature removed: do nothing
+  // root.render(
+  //   React.createElement(FloatingToolbar, {
+  //     selectedText: selectedText,
+  //     position: position,
+  //     onClose: hideToolbar,
+  //     onApplyChange: (newText: string) => replaceSelectedText(newText, activeElement)
+  //   })
+  // );
+  // isToolbarActive = true;
 }
 
 function hideToolbar() {

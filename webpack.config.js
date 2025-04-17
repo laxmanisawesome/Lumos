@@ -48,6 +48,11 @@ module.exports = {
       filename: 'options.html',
       chunks: ['options'],
     }),
+    new HTMLPlugin({
+      template: './src/setup.html',
+      filename: 'setup.html',
+      chunks: [],
+    }),
     new CopyPlugin({
       patterns: [
         { from: "manifest.json" },

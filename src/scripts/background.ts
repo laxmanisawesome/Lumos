@@ -1,9 +1,9 @@
 // Background script for Purgify extension
-import { OllamaService } from '../services/ollama';
+import { LLMService } from '../services/llm';
 
-// Initialize Ollama service
-const ollamaService = new OllamaService();
-console.log('Background script initialized, Ollama service created');
+// Initialize LLM service
+const llmService = new LLMService();
+console.log('Background script initialized, LLM service created');
 
 // Listen for messages from content scripts or popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -12,7 +12,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
   if (request.action === 'fixGrammar') {
     console.log('Handling fixGrammar action with text:', request.text);
-    ollamaService.fixGrammar(request.text)
+    llmService.fixGrammar(request.text)
       .then(result => {
         console.log('Grammar fix successful, result:', result);
         sendResponse({ success: true, result });
@@ -26,7 +26,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
   if (request.action === 'rephrase') {
     console.log('Handling rephrase action with text:', request.text);
-    ollamaService.rephrase(request.text)
+    llmService.rephrase(request.text)
       .then(result => {
         console.log('Rephrase successful, result:', result);
         sendResponse({ success: true, result });
@@ -40,7 +40,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
   if (request.action === 'autoCheckGrammar') {
     console.log('Handling autoCheckGrammar action with text:', request.text);
-    ollamaService.checkGrammar(request.text)
+    llmService.checkGrammar(request.text)
       .then(result => {
         console.log('Grammar check result:', result);
         if (result.hasIssues) {

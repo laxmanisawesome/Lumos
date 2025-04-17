@@ -1,10 +1,13 @@
 // Config file for Purgify extension
 export interface PurgifyConfig {
+  provider: 'ollama' | 'openai' | 'deepseek' | 'gemini';
+  apiKey?: string; // For OpenAI, DeepSeek, Gemini
+  providerModel?: string; // For OpenAI, DeepSeek, Gemini
   ollamaBaseUrl: string;
   ollamaModel: string;
   promptTemplates: {
-    grammarFix: string;
-    rephrase: string;
+    grammarFix: string; // Prompt for grammar fix
+    rephrase: string;  // Prompt for rephrase
     autoGrammarCheck: string;
   };
   autoCheckEnabled: boolean;
@@ -12,11 +15,12 @@ export interface PurgifyConfig {
 
 // Default configuration values
 export const defaultConfig: PurgifyConfig = {
+  provider: 'ollama',
   ollamaBaseUrl: 'http://localhost:11434',
   ollamaModel: 'tinyllama',
   promptTemplates: {
-    grammarFix: 'Fix the grammar without changing the tone or meaning:\n\n${text}',
-    rephrase: 'Rephrase while preserving meaning and tone:\n\n${text}',
+    grammarFix: 'Fix grammar and spelling only. Do not change tone, words, punctuation style, or sentence structure. Do not explain, translate, quote, or add anything. Return the corrected text only. No extra output. No markdown. No labels. No formatting.\n\n${text}',
+    rephrase: 'Rephrase the following text in a formal and professional tone. Keep the original meaning intact. Respond with the rephrased version only — no extra comments, no formatting, just the plain text.\n\n${text}',
     autoGrammarCheck: 'Check if this text has grammar issues. If it does, provide a corrected version. If not, respond with "No grammar issues found."\n\n${text}'
   },
   autoCheckEnabled: true
@@ -38,6 +42,10 @@ export async function getConfig(): Promise<PurgifyConfig> {
               ...(result.purgifyConfig.promptTemplates || {})
             }
           };
+          // Ensure all promptTemplates keys are present
+          config.promptTemplates.grammarFix = config.promptTemplates.grammarFix || defaultConfig.promptTemplates.grammarFix;
+          config.promptTemplates.rephrase = config.promptTemplates.rephrase || defaultConfig.promptTemplates.rephrase;
+          config.promptTemplates.autoGrammarCheck = config.promptTemplates.autoGrammarCheck || defaultConfig.promptTemplates.autoGrammarCheck;
           resolve(config);
         } else {
           resolve(defaultConfig);
